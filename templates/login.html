@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{# Sets the title for the login page #}
+{% block title %}Login{% endblock %}
+
+{# Main content block for the page #}
+{% block content %}
+<!-- A container to center the login card vertically and horizontally -->
+<div class="auth-container">
+    <!-- A container to center the login card vertically and horizontally -->
+    <div class="auth-card">
+        <h2>Login to Your Account</h2>
+        <p class="auth-subtitle">Welcome back! Please enter your details.</p>
+
+        <!-- This div will display login errors from the JavaScript logic -->
+        <div id="login-error" class="alert alert-danger" style="display: none;"></div>
+
+        <!-- The login form, handled by client-side JavaScript -->
+        <form id="login-form">
+
+            <!-- Email Field -->
+            <div class="form-group">
+                <label for="email">Email</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                </div>
+            </div>
+
+            <!-- Password Field -->
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                </div>
+                <!-- Container for the "Forgot password?" link -->
+                <div class="forgot-password-container">
+                    <a href="{{ url_for('forgot_password') }}" class="forgot-password-link">Forgot password?</a>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" id="login-button" class="auth-button">Login</button>
+        </form>
+
+        <!-- Link to the signup page for new users -->
+        <p class="auth-switch">Don't have an account? <a href="{{ url_for('signup') }}">Sign up here</a>.</p>
+    </div>
+</div>
+{% endblock %}
+
+{# This block contains the JavaScript for handling Firebase authentication on the client side #}
+{% block scripts %}
+<script>
+    document.getElementById('login-form').addEventListener('submit', function (event) {
+        // Prevent the form from making a traditional submission
+        event.preventDefault();
+        // Get User Inputs
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        // Get UI elementss for Providing Feedback  
+        const errorDiv = document.getElementById('login-error');
+        const loginButton = document.getElementById('login-button');
+
+        // Update UI to show that a login attempt is in progress
+        loginButton.disabled = true;
+        loginButton.innerText = 'Logging in...';
+        errorDiv.style.display = 'none';
+
+        // Use Firebase SDK to sign in the user
+        auth.signInWithEmailAndPassword(email, password)
+            .then(userCredential => userCredential.user.getIdToken()) // Get the ID token for the logged-in user
+            .then(idToken => {
+                // Send the ID token to the backend to create a server-side session
+                const formData = new FormData();
+                formData.append('idToken', idToken);
+                return fetch("{{ url_for('session_login') }}", { method: 'POST', body: formData });
+            })
+            .then(response => {
+                if (!response.ok) { throw new Error('Server validation failed.'); }
+                return response.json();
+            })
+            .then(data => {
+                // If the backend session is created successfully, redirect the user
+                if (data.status === 'success') {
+                    window.location.href = "{{ request.args.get('next') or url_for('home') }}";
+                } else {
+                    throw new Error(data.message || 'An unknown server error occurred.');
+                }
+            })
+            .catch((error) => {
+                // Handle any errors during the login process
+                let friendlyMessage = 'An unexpected error occurred. Please try again.';
+                // Provide user-friendly error messages based on the error code
+                switch (error.code) {
+                    case 'auth/invalid-login-credentials': case 'auth/wrong-password': case 'auth/user-not-found':
+                        friendlyMessage = 'Invalid credentials. Please check your email and password.'; break;
+                    case 'auth/invalid-email':
+                        friendlyMessage = 'The email address is not valid.'; break;
+                    case 'auth/too-many-requests':
+                        friendlyMessage = 'Access to this account has been temporarily disabled due to many failed login attempts.'; break;
+                    default: friendlyMessage = 'Login failed. Please try again.';
+                }
+                errorDiv.innerText = friendlyMessage;
+                errorDiv.style.display = 'block';
+
+                // Reset the button to allow another attempt
+                loginButton.disabled = false;
+                loginButton.innerText = 'Login';
+            });
+    });
+</script>
+{% endblock %}

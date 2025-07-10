@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{# Sets the title for this specific page #}
+{% block title %}Manage Users - Admin{% endblock %}
+
+{# Main content block for the page #}
+{% block content %}
+<!-- Page header with a link to go back to the main admin dashboard -->
+<div class="admin-dashboard-header">
+    <div>
+        <h2>Manage User Roles</h2>
+        <p>Promote or demote users. Changes are effective immediately.</p>
+    </div>
+    <div>
+        <a href="{{ url_for('admin_dashboard') }}" class="action-btn" style="background-color: #7d2bee;">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Container for the users table -->
+<div class="table-container">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>User Email</th>
+                <th>User ID (UID)</th>
+                <th>Date Registered</th>
+                <th>Current Role</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {# Loop through each user object passed from the backend #}
+            {% for user in users_list %}
+            {# Highlight the row corresponding to the currently logged-in admin #}
+            <tr class="{{ 'current-admin-row' if user.uid == session.get('user_id') }}">
+                <td>{{ user.email }}</td>
+                <!-- Displaying only the first 10 characters of the UID for brevity -->
+                <td class="uid-cell">{{ user.uid[:10] }}...</td>
+                <!-- Display the user's creation timestamp, formatted nicely -->
+                <td>{{ user.metadata.creation_timestamp.strftime('%d %b, %Y') if user.metadata and
+                    user.metadata.creation_timestamp else 'N/A' }}</td>
+                <td>
+                    <!-- Display a styled badge based on the user's role -->
+                    <span class="role-badge role-{{ user.role }}">
+                        {{ user.role|replace('-', ' ')|title }}
+                    </span>
+                </td>
+                <td class="action-cell">
+                    <!-- A super-admin cannot change their own role -->
+                    {% if user.uid == session.get('user_id') %}
+                    <span class="self-action-text"><i class="fas fa-user-lock"></i> (Your Account)</span>
+                    {% elif user.role == 'user' %}
+                    <!-- Show "Promote to Admin" button for regular users -->
+                    <form action="{{ url_for('promote_to_admin', user_id=user.uid) }}" method="post" class="role-form">
+                        <button type="submit" class="action-btn promote-btn">
+                            <i class="fas fa-user-shield"></i> Promote to Admin
+                        </button>
+                    </form>
+                    {% elif user.role == 'admin' %}
+                    <!-- Show "Demote to User" button for admins -->
+                    <form action="{{ url_for('demote_to_user', user_id=user.uid) }}" method="post" class="role-form">
+                        <button type="submit" class="action-btn demote-btn">
+                            <i class="fas fa-user-alt-slash"></i> Demote to User
+                        </button>
+                    </form>
+                    {% elif user.role == 'super-admin' %}
+                    <!-- Display text for other super-admins (no action possible) -->
+                    <span class="super-admin-text"><i class="fas fa-crown"></i> Super Admin</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{# Block for page-specific styles #}
+{% block styles %}
+<style>
+    .admin-dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .table-container {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .admin-table th,
+    .admin-table td {
+        border-bottom: 1px solid #ddd;
+        padding: 15px;
+        text-align: left;
+        vertical-align: middle;
+    }
+
+    .admin-table thead th {
+        background-color: #f8f9fa;
+    }
+
+    .admin-table tbody tr:nth-child(even) {
+        background-color: #f8f8f8;
+    }
+
+    .current-admin-row {
+        background-color: #e2f3ff !important;
+        font-weight: bold;
+    }
+
+    .uid-cell {
+        font-family: monospace;
+        font-size: 0.9em;
+        color: #555;
+    }
+
+    .role-badge {
+        font-weight: bold;
+        padding: 6px 12px;
+        border-radius: 20px;
+        color: white;
+        font-size: 0.9em;
+    }
+
+    .role-user {
+        background-color: #6c757d;
+    }
+
+    .role-admin {
+        background-color: #17a2b8;
+    }
+
+    .role-super-admin {
+        background-color: #c82333;
+    }
+
+    .action-cell {
+        min-width: 200px;
+    }
+
+    .role-form {
+        margin: 0;
+    }
+
+    .action-btn {
+        color: white;
+        padding: 8px 12px;
+        text-decoration: none;
+        border-radius: 5px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .promote-btn {
+        background-color: #28a745;
+    }
+
+    .demote-btn {
+        background-color: #ffc107;
+        color: #333;
+    }
+
+    .self-action-text,
+    .super-admin-text {
+        color: #555;
+        font-style: italic;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+</style>
+{% endblock %}

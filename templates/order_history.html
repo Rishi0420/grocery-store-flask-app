@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}My Order History{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>My Order History</h2>
+    <p>Here you can find details of all your past orders.</p>
+</div>
+
+<div class="orders-container">
+    {# Check if there are any orders to display #}
+    {% if orders %}
+    {% for order in orders %}
+    <div class="order-card">
+        <!-- Header section of the order card -->
+        <div class="order-header">
+            <div>
+                <h3 class="order-id">Order ID: {{ order.id }}</h3>
+                <p class="order-date">Ordered on: {{ order.created_at.strftime('%d %b, %Y at %I:%M %p') }}</p>
+            </div>
+            <!-- Status and total price section -->
+            <div class="order-status-section">
+                <span class="status-badge status-{{ order.status|lower|replace('_', '-') }}">
+                    {{ order.status|replace('_', ' ')|title }}
+                </span>
+                <p class="order-total">Total: <strong>₹{{ "%.2f"|format(order.total_price) }}</strong></p>
+            </div>
+        </div>
+        <!-- Body section of the order card, containing the items table -->
+        <div class="order-body">
+            <h4>Items in this order:</h4>
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {# Loop through the items within this specific order #}
+                    {% for product_id, product_data in order.order_items.items() %}
+                    <tr>
+                        <td>{{ product_data.name }}</td>
+                        <td>{{ product_data.quantity }}</td>
+                        <td>₹{{ "%.2f"|format(product_data.price) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <!-- This block is displayed if the user has no orders -->
+    <div class="empty-state-container">
+        <i class="fas fa-receipt empty-icon"></i>
+        <h3>No Orders Found</h3>
+        <p>You haven't placed any orders yet. Let's change that!</p>
+        <a href="{{ url_for('home') }}" class="action-btn add-btn" style="background-color: #5cb85c; color: white;
+        padding: 12px 25px;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: bold;
+        display: inline-block;
+        margin-top: 20px;">
+            <i class="fas fa-shopping-bag"></i> Start Shopping
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{# Block for page-specific styles #}
+{% block styles %}
+<style>
+    .order-card {
+        background-color: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    .order-header {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 8px 8px 0 0;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .order-id {
+        margin: 0;
+        font-size: 1.2em;
+        color: #333;
+    }
+
+    .order-date {
+        margin: 5px 0 0 0;
+        font-size: 0.9em;
+        color: #555;
+    }
+
+    .order-status-section {
+        text-align: right;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        color: #fff;
+        font-weight: bold;
+        font-size: 0.9em;
+        margin-bottom: 8px;
+    }
+
+    .status-completed {
+        background-color: #28a745;
+    }
+
+    .status-pending-payment {
+        background-color: #ffc107;
+        color: #333;
+    }
+
+    .status-payment-failed {
+        background-color: #dc3545;
+    }
+
+    .order-total {
+        margin: 0;
+        font-size: 1.1em;
+    }
+
+    .order-body {
+        padding: 20px;
+    }
+
+    .items-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+
+    .items-table th,
+    .items-table td {
+        border: 1px solid #e5e7eb;
+        padding: 10px;
+        text-align: left;
+    }
+
+    .items-table thead {
+        background-color: #f9f9f9;
+    }
+
+    .empty-state-container {
+        text-align: center;
+        padding: 50px;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+    }
+</style>
+{% endblock %}

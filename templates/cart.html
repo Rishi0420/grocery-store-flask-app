@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{# Sets the title for this specific page #}
+{% block title %}Your Shopping Cart{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Your Shopping Cart</h2>
+</div>
+
+{% if cart_items %}
+<div class="cart-layout">
+    <!-- Left Column: Cart Items -->
+    <div class="cart-items">
+        {% for item_id, item in cart_items.items() %}
+        <div class="cart-item-card" id="item-card-{{ item_id }}">
+            <div class="cart-item-image">
+                <img src="{{ item.image_url or url_for('static', filename='images/default_product.png') }}"
+                    alt="{{ item.name }}">
+            </div>
+            <div class="cart-item-details">
+                <h3 class="item-name">{{ item.name }}</h3>
+                <p class="item-price">₹{{ "%.2f"|format(item.price) }}</p>
+                <form action="{{ url_for('remove_from_cart', product_id=item_id) }}" method="post" class="remove-form">
+                    <button type="submit" class="remove-button" onclick="return confirm('Remove item from cart?');">
+                        <i class="fas fa-trash-alt"></i> Remove
+                    </button>
+                </form>
+            </div>
+            <div class="cart-item-actions">
+                <!-- IMPORTANT: The form is removed, actions are now handled by JS -->
+                <label>Quantity:</label>
+                <div class="quantity-selector" data-product-id="{{ item_id }}" data-price="{{ item.price }}">
+                    <button type="button" class="quantity-btn minus-btn">-</button>
+                    <input type="number" class="quantity-input" value="{{ item.quantity }}" min="1">
+                    <button type="button" class="quantity-btn plus-btn">+</button>
+                </div>
+                <p class="item-subtotal">Subtotal: <span id="subtotal-{{ item_id }}">₹{{ "%.2f"|format(item.price *
+                        item.quantity) }}</span></p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Right Column: Cart Summary -->
+    <div class="cart-summary">
+        <h3>Order Summary</h3>
+        <div class="summary-row">
+            <span>Subtotal</span>
+            <span id="summary-subtotal">₹{{ "%.2f"|format(total_price) }}</span>
+        </div>
+        <div class="summary-row">
+            <span>Shipping</span>
+            <span>Free</span>
+        </div>
+        <hr>
+        <div class="summary-row total-row">
+            <span>Total</span>
+            <span id="summary-total">₹{{ "%.2f"|format(total_price) }}</span>
+        </div>
+        <form action="{{ url_for('checkout') }}" method="post" style="margin-top: 20px;">
+            <button type="submit" class="checkout-button">Proceed to Checkout</button>
+        </form>
+    </div>
+</div>
+{% else %}
+<!-- A loader animation to indicate that the payment gateway is loading -->
+<div class="empty-cart">
+    <i class="fas fa-shopping-cart empty-cart-icon"></i>
+    <h3>Your cart is empty!</h3>
+    <p>Looks like you haven't added anything to your cart yet.</p>
+    <a href="{{ url_for('home') }}" class="start-shopping-btn">Start Shopping</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{# This block contains JavaScript specific to the cart page #}
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- This function sends the update to the server ---
+        function updateCart(productId, newQuantity) {
+            const card = document.getElementById(`item-card-${productId}`);
+            card.style.opacity = '0.5'; // Show a visual feedback
+
+            fetch(`/api/update_cart/${productId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ quantity: newQuantity })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Update the UI with the new data from the server
+                        document.getElementById(`subtotal-${productId}`).innerText = data.new_subtotal;
+                        document.getElementById('summary-subtotal').innerText = data.new_total;
+                        document.getElementById('summary-total').innerText = data.new_total;
+                        document.getElementById('cart-item-count').innerText = data.cart_item_count;
+                    } else {
+                        // If there's an error, you might want to show a message
+                        console.error('Error updating cart:', data.message);
+                    }
+                    card.style.opacity = '1'; // Restore full opacity
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    card.style.opacity = '1';
+                });
+        }
+
+        // --- Add event listeners to all quantity selectors ---
+        document.querySelectorAll('.quantity-selector').forEach(selector => {
+            const productId = selector.dataset.productId;
+            const minusBtn = selector.querySelector('.minus-btn');
+            const plusBtn = selector.querySelector('.plus-btn');
+            const quantityInput = selector.querySelector('.quantity-input');
+
+            minusBtn.addEventListener('click', () => {
+                let currentValue = parseInt(quantityInput.value);
+                if (currentValue > 1) {
+                    quantityInput.value = currentValue - 1;
+                    updateCart(productId, quantityInput.value);
+                }
+            });
+
+            plusBtn.addEventListener('click', () => {
+                let currentValue = parseInt(quantityInput.value);
+                quantityInput.value = currentValue + 1;
+                updateCart(productId, quantityInput.value);
+            });
+
+            // Optional: Update when the user manually types a number and presses Enter or clicks away
+            quantityInput.addEventListener('change', () => {
+                let currentValue = parseInt(quantityInput.value);
+                if (currentValue < 1) {
+                    quantityInput.value = 1; // Prevent going below 1
+                }
+                updateCart(productId, quantityInput.value);
+            });
+        });
+    });
+</script>
+{% endblock %}

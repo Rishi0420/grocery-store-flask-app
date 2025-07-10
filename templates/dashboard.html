@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{# Sets the title for this specific page #}
+{% block title %}My Dashboard{% endblock %}
+
+{# Main content block for the page #}
+{% block content %}
+<!-- Page Header -->
+<div class="dashboard-header">
+    <h2>My Dashboard</h2>
+    <p>Welcome back! Here's an overview of your products and recipe ideas.</p>
+</div>
+
+<!-- Main container for the dashboard layout -->
+<div class="dashboard-container">
+    <!-- Left Column: Product Shelf -->
+    <div class="shelf-column">
+        <h3><i class="fas fa-cubes"></i> My Product Shelf</h3>
+        <p class="section-subtitle">Items purchased in the last 30 days.</p>
+
+        <div class="shelf-items-grid">
+            {% if purchased_items %}
+            {% for item in purchased_items %}
+            {% if item.status != 'no_expiry_info' %}
+            <div class="dashboard-product-card">
+                <!-- Product Image Section -->
+                <div class="item-image">
+                    {# Show the product's image if available, otherwise show a default icon #}
+                    {% if item.product_image_url %}
+                    <img src="{{ item.product_image_url }}" alt="{{ item.product_name }}">
+                    {% else %}
+                    <i class="fas fa-carrot default-icon"></i>
+                    {% endif %}
+                </div>
+                <!-- Product Details Section -->
+                <div class="item-details">
+                    <h4 class="product-name">{{ item.product_name }} (Qty: {{ item.quantity }})</h4>
+                    <p class="purchase-date"><i class="fas fa-calendar-alt"></i> Purchased: {{
+                        item.purchase_date.strftime('%d %b, %Y') }}</p>
+                    <div class="shelf-life-info">
+                        <div class="status-text status-{{ item.status }}">
+                            {% if item.status == 'expired' %}
+                            <i class="fas fa-exclamation-circle"></i> Expired {{ -item.days_remaining }} days ago
+                            {% elif item.status == 'expiring_soon' %}
+                            <i class="fas fa-exclamation-triangle"></i> Expires in {{ item.days_remaining + 1 }} days!
+                            {% else %}
+                            <i class="fas fa-check-circle"></i> {{ item.days_remaining + 1 }} days remaining
+                            {% endif %}
+                        </div>
+                        <!-- Shelf Life Information Section -->
+                        <div class="shelf-life-bar-container">
+                            <div class="shelf-life-bar bar-{{ item.status }}"
+                                data-percentage="{{ item.percentage_remaining }}"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+            {% else %}
+            <p>You have not purchased any products with shelf life information in the last 30 days.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right Column: Recipe Suggestions -->
+    <div class="recipe-column">
+        <div class="recipe-suggestion-card">
+            <h3><i class="fas fa-lightbulb"></i> Need Inspiration?</h3>
+            <p>Get recipe ideas based on what's in your shelf!</p>
+            <button id="get-recipes-btn"><i class="fas fa-utensils"></i> Suggest Recipes</button>
+            <div id="recipe-results">
+                <div class="loader-container" style="display: none;">
+                    <div class="loader"></div>
+                    <p>Fetching delicious ideas...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{# This block contains JavaScript specific to the dashboard page #}
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- Animate the shelf-life progress bars on page load ---
+        const lifeBars = document.querySelectorAll('.shelf-life-bar');
+        lifeBars.forEach(bar => {
+            const percentage = bar.getAttribute('data-percentage');
+            if (percentage) {
+                // Use a small timeout to make the CSS transition visible
+                setTimeout(() => {
+                    bar.style.width = percentage + '%';
+                }, 100);
+            }
+        });
+
+        // --- Handle the "Suggest Recipes" button click ---
+        const getRecipesBtn = document.getElementById('get-recipes-btn');
+        const recipeResultsDiv = document.getElementById('recipe-results');
+        const loader = document.querySelector('.loader-container');
+
+        getRecipesBtn.addEventListener('click', function () {
+            // Show the loader and clear previous results
+            loader.style.display = 'flex';
+            recipeResultsDiv.innerHTML = '';
+            recipeResultsDiv.appendChild(loader);
+
+            // Fetch recipe suggestions from the backend API
+            fetch("{{ url_for('suggest_recipes') }}")
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    loader.style.display = 'none'; // Hide the loader
+                    if (data.error) {
+                        recipeResultsDiv.innerHTML = `<p class="error-message">${data.error}</p>`;
+                    } else if (data.length === 0) {
+                        recipeResultsDiv.innerHTML = `<p class="info-message">No recipes found for your ingredients. Try adding more items!</p>`;
+                    } else {
+                        // Build and display the recipe result cards
+                        let html = '<h4>Here are some ideas:</h4>';
+                        data.forEach(recipe => {
+                            html += `
+                        <div class="recipe-result-card">
+                            <img src="${recipe.image}" alt="${recipe.title}">
+                            <div class="recipe-info">
+                                <h5>${recipe.title}</h5>
+                                <a href="https://spoonacular.com/recipes/${recipe.title.replace(/\s/g, '-')}-${recipe.id}" target="_blank" class="recipe-link">View Recipe</a>
+                            </div>
+                        </div>
+                        `;
+                        });
+                        recipeResultsDiv.innerHTML = html;
+                    }
+                })
+                .catch(error => {
+                    // Handle any errors during the fetch process
+                    loader.style.display = 'none'; 
+                    recipeResultsDiv.innerHTML = `<p class="error-message">Could not fetch recipes. Please try again later.</p>`;
+                    console.error('Error fetching recipes:', error);
+                });
+        });
+    });
+</script>
+{% endblock %}

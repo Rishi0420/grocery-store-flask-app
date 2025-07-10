@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- The title block can be overridden by child templates -->
+    <title>{% block title %}Grocery Store{% endblock %}</title>
+    <!-- Font Awesome for icons (currently commented out, but can be enabled) -->
+    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"> -->
+    <!-- Inline CSS for base styles. In a larger project, this would be in an external file. -->
+    <style>
+        /* General Body Styles */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #eaeded;
+            color: #333;
+        }
+
+        /* Main Navigation Bar */
+        .main-nav {
+            background-color: #232f3e;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .main-nav a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 10px;
+            border-radius: 3px;
+            border: 1px solid transparent;
+        }
+
+        .main-nav a:hover {
+            border: 1px solid white;
+        }
+
+        /* Nav Sections */
+        .nav-left a {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+        }
+
+        .nav-search {
+            flex-grow: 1;
+            display: flex;
+            max-width: 600px;
+
+        }
+
+        .nav-search form {
+            width: 100%;
+            display: flex;
+        }
+
+        .nav-search input[type="search"] {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 4px 0 0 4px;
+            font-size: 1em;
+            outline: none;
+        }
+
+        .nav-search button {
+            width: 50px;
+            flex-shrink: 0;
+            background-color: #febd69;
+            border: none;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            /* margin-left: auto; */
+        }
+
+        .nav-right .logout-button {
+            background: none;
+            border: none;
+            color: #febd69;
+            cursor: pointer;
+            text-decoration: none;
+            padding: 0;
+            font-family: inherit;
+            font-size: 0.9em;
+        }
+
+        .nav-right .logout-button:hover {
+            text-decoration: underline;
+        }
+
+        .nav-right .admin-link {
+            background-color: #4caf50;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+
+        /* Main Content Container */
+        .container {
+            max-width: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 20px;
+            background-color: white;
+            box-sizing: border-box;
+
+        }
+
+        /* Alert Messages */
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+        }
+
+        .alert-danger {
+            color: #a94442;
+            background-color: #f2dede;
+            border-color: #ebccd1;
+        }
+
+        .alert-success {
+            color: #3c763d;
+            background-color: #dff0d8;
+            border-color: #d6e9c6;
+        }
+
+        .alert-info {
+            color: #31708f;
+            background-color: #d9edf7;
+            border-color: #bce8f1;
+        }
+
+        .alert-warning {
+            color: #8a6d3b;
+            background-color: #fcf8e3;
+            border-color: #faebcc;
+        }
+
+        /* General Form Styles */
+        form label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        form input[type="text"],
+        form input[type="email"],
+        form input[type="password"],
+        form input[type="number"],
+        form input[type="url"],
+        form input[type="date"] {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        form button {
+            background-color: #5cb85c;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        form button:hover {
+            background-color: #4cae4c;
+        }
+
+
+        /* Product Grid Layout */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 25px;
+            padding: 0;
+            list-style-type: none;
+        }
+
+        /* Individual Product Card */
+        .product-card {
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Product Image */
+        .product-image-container {
+            width: 100%;
+            height: 180px;
+            background-color: #f9f9f9;
+        }
+
+        .product-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Product Information section */
+        .product-info {
+            padding: 15px;
+            flex-grow: 1;
+        }
+
+        .product-name {
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+            line-height: 1.3;
+            height: 2.6em;
+            overflow: hidden;
+        }
+
+        .product-description {
+            font-size: 0.9em;
+            color: #666;
+            height: 3.6em;
+            overflow: hidden;
+            line-height: 1.2;
+            margin-bottom: 10px;
+        }
+
+        /* Product Purchase Section (Price & Button) */
+        .product-purchase-section {
+            padding: 0 15px 15px 15px;
+            border-top: 1px solid #f0f0f0;
+            margin-top: 10px;
+        }
+
+        .product-price {
+            font-weight: bold;
+            font-size: 1.4em;
+            color: #c0392b;
+            margin-bottom: 15px;
+            margin-top: 10px;
+        }
+
+        /* Add to Cart Button */
+        .add-to-cart-form {
+            margin: 0;
+        }
+
+        .add-to-cart-btn {
+            width: 100%;
+            padding: 12px;
+            font-size: 1em;
+            font-weight: bold;
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .add-to-cart-btn:hover {
+            background-color: #4cae4c;
+        }
+
+
+        /* Dashboard Layout */
+        .dashboard-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+
+        .shelf-column {
+            flex: 2;
+            min-width: 300px;
+        }
+
+        .recipe-column {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .shelf-items-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        /* Dashboard Product Card */
+        .dashboard-product-card {
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            display: flex;
+            padding: 15px;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .item-image {
+            width: 60px;
+            height: 60px;
+            flex-shrink: 0;
+            background-color: #f0fdf4;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .item-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .item-image .default-icon {
+            font-size: 24px;
+            color: #22c55e;
+        }
+
+        .item-details {
+            flex-grow: 1;
+        }
+
+        .item-details .product-name {
+            margin: 0 0 5px 0;
+            font-size: 1.1em;
+        }
+
+        .item-details .purchase-date {
+            font-size: 0.9em;
+            color: #666;
+            margin: 0 0 10px 0;
+        }
+
+        .shelf-life-info .status-text {
+            font-size: 0.95em;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+
+        /* Recipe Suggestion Card */
+        .recipe-suggestion-card {
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            padding: 25px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 20px;
+        }
+
+        .recipe-suggestion-card h3 {
+            margin-top: 0;
+        }
+
+        #get-recipes-btn {
+            width: 100%;
+            background-color: #f39c12;
+            color: #fff;
+            padding: 12px;
+            border-radius: 5px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        #get-recipes-btn:hover {
+            background-color: #e67e22;
+        }
+
+        #recipe-results {
+            margin-top: 20px;
+        }
+
+        .recipe-result-card {
+            display: flex;
+            gap: 15px;
+            background-color: #fafafa;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .recipe-result-card img {
+            width: 80px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .recipe-result-card h5 {
+            margin: 0;
+            font-size: 0.95em;
+        }
+
+        .recipe-link {
+            font-size: 0.85em;
+            text-decoration: none;
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        /* Loader Animation */
+        .loader-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            color: #777;
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #f39c12;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+
+        /* Cart Page Layout */
+        .cart-layout {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+
+        .cart-items {
+            flex: 2;
+        }
+
+        .cart-summary {
+            flex: 1;
+            background-color: #f9f9f9;
+            padding: 25px;
+            border-radius: 8px;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        /* Cart Item Card */
+        .cart-item-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .cart-item-image {
+            width: 100px;
+            height: 100px;
+            flex-shrink: 0;
+        }
+
+        .cart-item-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .cart-item-details {
+            flex-grow: 1;
+        }
+
+        .item-name {
+            margin-top: 0;
+        }
+
+        .item-price {
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .remove-button {
+            background-color: #9fafff;
+            border: none;
+            color: #ab2618;
+            cursor: pointer;
+            padding: 5px;
+            font-size: 0.9em;
+        }
+
+        .cart-item-actions {
+            text-align: right;
+        }
+
+        /* Quantity Selector */
+        .quantity-form {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .quantity-selector {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .quantity-selector input {
+            width: 50px;
+            text-align: center;
+            border: 1px solid #ddd;
+            height: 35px;
+            margin: 0 5px;
+            border-radius: 4px;
+        }
+
+        .quantity-btn {
+            width: 35px;
+            height: 35px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            font-size: 1.2em;
+        }
+
+        .update-btn {
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            font-size: 0.9em;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .item-subtotal {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        /* Cart Summary */
+        .cart-summary h3 {
+            margin-top: 0;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .total-row {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .checkout-button {
+            width: 100%;
+            background-color: #007bff;
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Empty Cart */
+        .empty-cart {
+            text-align: center;
+            padding: 50px 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .empty-cart-icon {
+            font-size: 4em;
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+
+        .start-shopping-btn {
+            background-color: #5cb85c;
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 20px;
+        }
+
+
+        /* Footer  */
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        /* Authentication Pages Styling */
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+            min-height: 70vh;
+        }
+
+        .auth-card {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+
+        .auth-card h2 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 2em;
+            color: #232f3e;
+        }
+
+        .auth-subtitle {
+            margin-bottom: 30px;
+            color: #555;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .input-with-icon {
+            position: relative;
+        }
+
+        .input-with-icon .fas {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #aaa;
+        }
+
+        .input-with-icon input {
+            width: 100%;
+            padding: 12px 12px 12px 40px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        .input-with-icon input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+        }
+
+        .auth-button {
+            width: 100%;
+            padding: 14px;
+            font-size: 1.1em;
+            font-weight: bold;
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+
+        .auth-button:hover {
+            background-color: #4cae4c;
+        }
+
+        .auth-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .auth-switch {
+            margin-top: 25px;
+            color: #555;
+        }
+
+        .auth-switch a {
+            color: #007bff;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .auth-switch a:hover {
+            text-decoration: underline;
+        }
+
+        /* ========================================= */
+        /*      RESPONSIVE DESIGN - MEDIA QUERY      */
+        /* ========================================= */
+        @media (max-width: 992px) {
+
+            /* --- Hamburger Menu Icon Styling --- */
+            .hamburger-menu {
+                display: flex;
+                flex-direction: column;
+                justify-content: space-around;
+                width: 30px;
+                height: 25px;
+                cursor: pointer;
+                z-index: 1001;
+            }
+
+            .hamburger-menu span {
+                width: 100%;
+                height: 3px;
+                background-color: white;
+                border-radius: 2px;
+                transition: all 0.3s ease-in-out;
+            }
+
+            .hamburger-menu.active span:nth-child(1) {
+                transform: rotate(45deg) translate(5px, 5px);
+            }
+
+            .hamburger-menu.active span:nth-child(2) {
+                opacity: 0;
+            }
+
+            .hamburger-menu.active span:nth-child(3) {
+                transform: rotate(-45deg) translate(7px, -6px);
+            }
+
+            /* --- Navigation Bar Adjustments --- */
+            .main-nav {
+                flex-wrap: nowrap;
+            }
+
+            .nav-search {
+                display: none;
+            }
+
+            .nav-right {
+                display: none;
+                position: absolute;
+                top: 60px;
+                left: 0;
+                width: 100%;
+                background-color: #37475a;
+                flex-direction: column;
+                align-items: stretch;
+                padding: 0;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                z-index: 1000;
+            }
+
+            .nav-right.active {
+                display: flex;
+            }
+
+            .nav-right a {
+                text-align: left;
+                padding: 15px 20px;
+                border-bottom: 1px solid #4a5c70;
+                border-radius: 0;
+            }
+
+            .nav-right a:last-child {
+                border-bottom: none;
+            }
+
+            .nav-right .user-info {
+                order: -1;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+                padding: 15px 20px;
+                border-bottom: 1px solid #4a5c70;
+                width: auto;
+                background-color: #232f3e;
+            }
+
+            /* --- Main Content and Grids --- */
+            .container {
+                margin: 0;
+                border-radius: 0;
+                box-shadow: none;
+            }
+
+            .dashboard-container,
+            .cart-layout {
+                flex-direction: column;
+            }
+
+            .recipe-suggestion-card,
+            .cart-summary {
+                position: static;
+            }
+        }
+
+        /* For very small screens, show two products per row */
+        @media (max-width: 480px) {
+            .product-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+
+            .product-card {
+                font-size: 0.9em;
+            }
+
+            .product-name {
+                font-size: 1.1em;
+            }
+
+            .product-price {
+                font-size: 1.2em;
+            }
+        }
+    </style>
+    <!-- A block for child templates to add their own specific styles -->
+    {% block styles %}{% endblock %}
+</head>
+
+<body>
+    <!-- Main header of the website -->
+    <header style="background-color: #232f3e;">
+        <div class="header-container">
+            <!-- Main Navigation Bar -->
+            <nav class="main-nav">
+                <!-- Left: Brand/Logo -->
+                <div class="nav-left">
+                    <a href="{{ url_for('home') }}">GroceryStore</a>
+                </div>
+
+                <!-- Center: Search Bar (hidden on mobile) -->
+                <div class="nav-search">
+                    <form action="{{ url_for('search') }}" method="get">
+                        <input type="search" name="query" placeholder="Search for products..." required>
+                        <button type="submit" aria-label="Search">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                                class="bi bi-search" viewBox="0 0 16 16">
+                                <path
+                                    d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Hamburger Menu Icon (only visible on mobile) -->
+                <div class="hamburger-menu" id="hamburger-menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+
+                <!-- Right: User Actions (becomes the slide-out menu on mobile) -->
+                <div class="nav-right" id="nav-right-links">
+                    {% if session.get('user_id') %}
+                    <a href="{{ url_for('dashboard') }}">My Dashboard</a>
+                    <a href="{{ url_for('order_history') }}">My Orders</a>
+                    <a href="{{ url_for('view_notifications') }}">Notifications</a>
+                    <a href="{{ url_for('view_cart') }}">Cart (<span id="cart-item-count">{{ session.get('cart',
+                            {})|length }}</span>)</a>
+                    <div class="user-info">
+                        <span>Hello, {{ session.get('user_email', 'User') }}</span>
+                        <form action="{{ url_for('logout') }}" method="POST" style="display: inline; margin-left: 5px;">
+                            <button type="submit" class="logout-button">(Logout)</button>
+                        </form>
+                    </div>
+                    {% if session.get('user_role') in ['admin', 'super-admin'] %}
+                    <a href="{{ url_for('admin_dashboard') }}" class="admin-link">Admin Panel</a>
+                    {% endif %}
+                    {% else %}
+                    <a href="{{ url_for('login') }}">Login</a>
+                    <span>|</span>
+                    <a href="{{ url_for('signup') }}">Sign Up</a>
+                    {% endif %}
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main content area where child templates will inject their content -->
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- The main content from child templates will appear here -->
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer style="background-color: #f0f0f0; padding: 20px 0;">
+        <div class="footer-container">
+            <p>© 2025 Grocery Store. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Firebase SDK Scripts for frontend authentication -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script>
+        // Initialize Firebase on the client-side with config values passed securely from the backend
+        const firebaseConfig = {
+            apiKey: "{{ firebase_config.apiKey }}",
+            authDomain: "{{ firebase_config.authDomain }}",
+            projectId: "{{ firebase_config.projectId }}",
+            storageBucket: "{{ firebase_config.storageBucket }}",
+            messagingSenderId: "{{ firebase_config.messagingSenderId }}",
+            appId: "{{ firebase_config.appId }}"
+        };
+
+        // Ensure Firebase is initialized only once
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+    </script>
+
+    <!-- JavaScript for the Hamburger Menu -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const hamburger = document.getElementById('hamburger-menu');
+            const navLinks = document.getElementById('nav-right-links');
+
+            if (hamburger && navLinks) {
+                hamburger.addEventListener('click', function () {
+                    hamburger.classList.toggle('active');
+                    navLinks.classList.toggle('active');
+                });
+            }
+        });
+    </script>
+
+    <!-- A block for child templates to add their own specific JavaScript -->
+    {% block scripts %}{% endblock %}
+
+</body>
+
+</html>

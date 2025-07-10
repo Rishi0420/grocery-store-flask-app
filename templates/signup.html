@@ -1,0 +1,43 @@
+{# Inherits the base layout from base.html #}
+{% extends "base.html" %}
+
+{# Sets the title for the signup page #}
+{% block title %}Create New Account{% endblock %}
+
+{# Main content block for the page #}
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>Create New Account</h2>
+        <p class="auth-subtitle">Join us today! It's quick and easy.</p>
+
+        {# Flashed messages (like errors from the backend) will be displayed here #}
+
+        <!-- The signup form, which submits data to the backend 'signup' route -->
+        <form method="POST" action="{{ url_for('signup') }}">
+            <!-- Email Field -->
+            <div class="form-group">
+                <label for="email">Email</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                </div>
+            </div>
+            <!-- Password Field -->
+            <div class="form-group">
+                <label for="password">Password (at least 6 characters)</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" name="password" placeholder="Choose a strong password"
+                        minlength="6" required>
+                </div>
+            </div>
+            <!-- Submit Button -->
+            <button type="submit" class="auth-button">Create Account</button>
+        </form>
+
+        <!-- Link to the login page for existing users -->
+        <p class="auth-switch">Already have an account? <a href="{{ url_for('login') }}">Login here</a>.</p>
+    </div>
+</div>
+{% endblock %}

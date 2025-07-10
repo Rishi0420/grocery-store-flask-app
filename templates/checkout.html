@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{# Sets the title for this specific page #}
+{% block title %}Checkout{% endblock %}
+
+{# Main content block for the page #}
+{% block content %}
+<div class="checkout-container">
+    <h2>Complete Your Payment</h2>
+    <p>Please wait while we prepare your payment...</p>
+    <!-- A loader animation to indicate that the payment gateway is loading -->
+    <div class="loader"></div>
+    <p>Total Amount: <strong>₹{{ "%.2f"|format(razorpay_order.amount / 100) }}</strong></p>
+    <!-- This button is hidden and is used by Razorpay's script to initiate payment -->
+    <button id="rzp-button1" style="display:none;">Pay with Razorpay</button>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .checkout-container {
+        text-align: center;
+        padding: 50px;
+    }
+
+    .loader {
+        border: 8px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 8px solid #007bff;
+        width: 60px;
+        height: 60px;
+        animation: spin 1.5s linear infinite;
+        margin: 20px auto;
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+{% endblock %}
+
+{# This block contains the critical JavaScript for Razorpay integration #}
+{% block scripts %}
+<!-- Include the official Razorpay Checkout JS library -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+    // This script runs after the page content has loaded
+    document.addEventListener('DOMContentLoaded', function () {
+        var options = {
+            "key": "{{ key_id }}", // Your public Razorpay Key ID
+            "amount": "{{ razorpay_order.amount }}", // Amount in Paise
+            "currency": "INR",
+            "name": "GroceryStore",
+            "description": "Payment for your grocery order",
+            "image": "{{ url_for('static', filename='images/logo.png') }}", // store's logo
+            "order_id": "{{ razorpay_order.id }}", // The unique order_id from Razorpay
+
+            // This handler function is called after a successful payment
+            "handler": function (response) {
+                // Prepare the data to be sent to the backend for verification
+                const dataToSend = {
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_signature: response.razorpay_signature,
+                    firestore_order_id: "{{ firestore_order_id }}"
+                };
+
+                // Send the payment details to your server for signature verification
+                fetch("{{ url_for('payment_verification') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(dataToSend)
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            // Redirect to the homepage (or an order success page) after successful verification
+                            window.location.href = data.redirect_url;
+                        } else {
+                            // Inform the user if verification fails
+                            alert('Payment verification failed. Please contact support.');
+                        }
+                    });
+            },
+
+            // Pre-fill user information in the checkout form
+            "prefill": {
+                "name": "Test User",
+                "email": "{{ session.get('user_email', '') }}",
+                "contact": "9999999999" // 
+            },
+            "notes": {
+                "address": "GroceryStore Transaction"
+            },
+            "theme": {
+                "color": "#007bff"
+            }
+        };
+        var rzp1 = new Razorpay(options);
+
+        // This function handles payment failures
+        rzp1.on('payment.failed', function (response) {
+            alert("Payment failed: " + response.error.description);
+            // Redirect the user back to the cart page
+            window.location.href = "{{ url_for('view_cart') }}";
+        });
+
+        // Open the Razorpay checkout modal automatically when the page loads
+        rzp1.open();
+    });
+</script>
+{% endblock %}

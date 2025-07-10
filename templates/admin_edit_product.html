@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Product - Admin{% endblock %}
+
+{% block content %}
+<h2>Edit Product: {{ product.name }}</h2>
+
+<form method="POST" action="{{ url_for('admin_edit_product', product_id=product_id) }}">
+    <div>
+        <label for="name">Product Name:</label>
+        <input type="text" id="name" name="name" value="{{ product.get('name', '') }}" required>
+    </div>
+    <div>
+        <label for="price">Price (₹):</label>
+        <input type="number" step="0.01" id="price" name="price" value="{{ product.get('price', '') }}" required>
+    </div>
+    <div>
+        <label for="description">Description:</label>
+        <textarea id="description" name="description" rows="3">{{ product.get('description', '') }}</textarea>
+    </div>
+    <div>
+        <label for="image_url">Image URL:</label>
+        <input type="url" id="image_url" name="image_url" value="{{ product.get('image_url', '') }}"
+            placeholder="https://example.com/image.jpg">
+    </div>
+
+    <hr style="margin: 20px 0;">
+    <h4>Product Expiry Information (Optional)</h4>
+    <div>
+        <label for="shelf_life_days">Shelf Life (in days, from date of purchase):</label>
+        <input type="number" id="shelf_life_days" name="shelf_life_days"
+            value="{{ product.get('shelf_life_days', '') }}" min="0">
+    </div>
+    <hr style="margin: 20px 0;">
+
+    <button type="submit">Update Product</button>
+</form>
+
+<p><a href="{{ url_for('admin_dashboard') }}">Back to Admin Dashboard</a></p>
+{% endblock %}

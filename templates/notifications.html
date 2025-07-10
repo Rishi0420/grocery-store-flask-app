@@ -1,0 +1,29 @@
+{# Inherits the base layout from base.html #}
+{% extends "base.html" %}
+
+{# Sets the title for this specific page #}
+{% block title %}Your Notifications{% endblock %}
+
+{# Main content block for the page #}
+{% block content %}
+<h2>Your Notifications</h2>
+
+{# Check if there are any notifications for the user #}
+{% if notifications %}
+<ul style="list-style: none; padding: 0;">
+    {% for notif in notifications %}
+    <li
+        style="background-color: #eaf2ff; padding: 15px; border-left: 5px solid #0056b3; margin-bottom: 10px; border-radius: 4px;">
+        <!-- Display the notification message -->
+        <p style="margin: 0;">{{ notif.message }}</p>
+        <!-- Display the creation timestamp of the notification, formatted nicely -->
+        <small style="color: #555;">{{ notif.created_at.strftime('%d %b, %Y %I:%M %p') if notif.created_at else ''
+            }}</small>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<!-- This message is shown if the user has no notifications -->
+<p>You have no notifications at this time.</p>
+{% endif %}
+{% endblock %}

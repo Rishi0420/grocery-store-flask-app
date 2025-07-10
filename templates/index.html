@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{# Sets the title for the homepage #}
+{% block title %}Homepage - Grocery Store{% endblock %}
+
+{# Main content block for the page #}
+{% block content %}
+<div class="page-header">
+    <h1>Welcome to Our Grocery Store!</h1>
+    <h2>Available Products:</h2>
+</div>
+
+{# Check if there are any products passed from the backend to display #}
+{% if products %}
+<!-- Grid container for all product cards -->
+<div class="product-grid">
+    {% for product in products %}
+    <div class="product-card">
+        <!-- Product Image Section -->
+        <div class="product-image-container">
+            {% if product.image_url %}
+            <img src="{{ product.image_url }}" alt="{{ product.name }}" class="product-image">
+            {% else %}
+            <img src="{{ url_for('static', filename='images/default_product.png') }}" alt="Default product image"
+                class="product-image">
+            {% endif %}
+        </div>
+
+        <!-- Product Information Section (Name and Description) -->
+        <div class="product-info">
+            <h3 class="product-name">{{ product.name }}</h3>
+            <p class="product-description">
+                {# Display the first 80 characters of the description, followed by '...' if it's longer #}
+                {{ product.get('description', '')[:80] }}{% if product.get('description', '')|length > 80 %}...{% endif
+                %}
+            </p>
+        </div>
+
+        <!-- Product Purchase Section (Price and Add to Cart button) -->
+        <div class="product-purchase-section">
+            <p class="product-price">₹{{ "%.2f"|format(product.price) }}</p>
+            <form action="{{ url_for('add_to_cart', product_id=product.id) }}" method="post" class="add-to-cart-form">
+                <!-- A hidden input to add a default quantity of 1 -->
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" class="add-to-cart-btn">
+                    <i class="fas fa-shopping-cart"></i> Add to Cart
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<!-- This message is shown if no products are available in the database -->
+<p>No products are available at the moment.</p>
+{% endif %}
+
+{% endblock %}

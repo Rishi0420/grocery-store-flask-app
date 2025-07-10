@@ -1,0 +1,49 @@
+{# This template displays the results of a product search #}
+
+{% extends "base.html" %}
+
+{# Sets a dynamic title based on the search query #}
+{% block title %}Search Results for "{{ query }}"{% endblock %}
+
+{# Main content block for the page #}
+{% block content %}
+<div class="page-header">
+    <h2>Search Results for: <em>"{{ query }}"</em></h2>
+</div>
+
+{# Check if any products were found for the search query #}
+{% if products %}
+<p>{{ products|length }} product(s) found.</p>
+<!-- Uses the same product grid and card styling as the homepage for consistency -->
+<div class="product-grid">
+    {% for product in products %}
+    <div class="product-card">
+        <div class="product-image-container">
+            {% if product.image_url %}
+            <img src="{{ product.image_url }}" alt="{{ product.name }}" class="product-image">
+            {% else %}
+            <img src="{{ url_for('static', filename='images/default_product.png') }}" alt="Default product image"
+                class="product-image">
+            {% endif %}
+        </div>
+        <div class="product-info">
+            <h3 class="product-name">{{ product.name }}</h3>
+            <p class="product-description">{{ product.get('description', '')[:80] }}{% if product.get('description',
+                '')|length > 80 %}...{% endif %}</p>
+        </div>
+        <div class="product-purchase-section">
+            <p class="product-price">₹{{ "%.2f"|format(product.price) }}</p>
+            <form action="{{ url_for('add_to_cart', product_id=product.id) }}" method="post">
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" class="add-to-cart-btn">Add to Cart</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<!-- This message is displayed if no products match the search query -->
+<p>No products found matching your search query. Please try another keyword.</p>
+<p><a href="{{ url_for('home') }}">Back to Homepage</a></p>
+{% endif %}
+{% endblock %}
